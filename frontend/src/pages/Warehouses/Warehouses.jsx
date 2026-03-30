@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, InputNumber, Space, message, Typography, Tag, Row, Col, Card, Progress, Statistic } from 'antd';
 import { PlusOutlined, EditOutlined, EnvironmentOutlined, PieChartOutlined, CheckCircleOutlined } from '@ant-design/icons';
-import { warehouseAPI } from '../../services/api';
+import { warehouseAPI, orderAPI } from '../../services/api';
 import { geocodeAddress } from '../../services/utils';
 
 const { Title, Text } = Typography;
@@ -46,17 +46,11 @@ const Warehouses = () => {
 
   const fetchStats = async (warehouseId) => {
     try {
-      const token = localStorage.getItem('access_token');
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-      const res = await fetch(`/api/orders/capacity/${warehouseId}/`, { headers });
-      if (res.ok) {
-        const data = await res.json();
-        setWarehouseStats(data);
-      } else {
-        message.warning("Chưa có số liệu thống kê cho kho này (hoặc API lỗi).");
-      }
+      const response = await orderAPI.checkCapacity(warehouseId);
+      setWarehouseStats(response.data);
     } catch (e) {
       console.error("Fetch Stats Error:", e);
+      message.warning("Chưa có số liệu thống kê cho kho này (hoặc API lỗi).");
     }
   };
 

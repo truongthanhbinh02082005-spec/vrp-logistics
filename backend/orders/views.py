@@ -107,6 +107,7 @@ def bulk_create_orders(request):
     
     orders_data = request.data.get('orders', [])
     warehouse_id = request.data.get('warehouse_id')
+    errors = []
     
     print(f"[BULK] Received {len(orders_data)} orders, warehouse_id={warehouse_id}")
     

@@ -263,6 +263,8 @@ def complete_route(request, pk):
         except Vehicle.DoesNotExist:
             pass
 
+    return Response({'message': 'Route completed successfully'})
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def optimize_routes(request):

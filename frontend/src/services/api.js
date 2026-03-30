@@ -90,6 +90,8 @@ export const orderAPI = {
   getPending: () => api.get('orders/pending/'),
   updateStatus: (id, data) => api.put(`orders/${id}/status/`, data),
   assign: (id, data) => api.put(`orders/${id}/assign/`, data),
+  bulkImport: (data) => api.post('orders/bulk/', data),
+  checkCapacity: (warehouseId) => api.get(`orders/capacity/${warehouseId}/`),
 };
 
 // Transport/Route APIs

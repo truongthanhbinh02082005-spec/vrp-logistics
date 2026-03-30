@@ -212,13 +212,10 @@ const Orders = () => {
 
     // Step 1: Check capacity based on VOLUME (m³)
     try {
-      const token = localStorage.getItem('access_token');
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-      const res = await fetch(`/api/orders/capacity/${selectedImportWarehouse}/`, { headers });
+      const response = await orderAPI.checkCapacity(selectedImportWarehouse);
+      const capacity = response.data;
 
-      if (res.ok) {
-        const capacity = await res.json();
-        // Tính tổng volume sẽ import (mỗi đơn default 0.01 m³ nếu không có)
+      // Tính tổng volume sẽ import (mỗi đơn default 0.01 m³ nếu không có)
         const totalImportVolume = importedData.reduce((sum, item) => sum + (parseFloat(item.volume) || 0.01), 0);
         const remainingVolume = capacity.remaining_volume;
 
@@ -238,7 +235,6 @@ const Orders = () => {
             return;
           }
         }
-      }
     } catch (e) {
       console.error('Capacity check failed:', e);
       // Nếu lỗi check thì vẫn cho import (fallback)
@@ -281,30 +277,18 @@ const Orders = () => {
         delivery_longitude: (lngRange.min + Math.random() * (lngRange.max - lngRange.min)).toFixed(6),
       }));
 
-      const token = localStorage.getItem('access_token');
-      const response = await fetch('/api/orders/bulk/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          orders: ordersToImport,
-          warehouse_id: selectedImportWarehouse
-        })
+      const response = await orderAPI.bulkImport({
+        orders: ordersToImport,
+        warehouse_id: selectedImportWarehouse
       });
 
       message.destroy(); // Clear loading message
-      const result = await response.json();
+      const result = response.data;
 
-      if (response.ok) {
-        setImportedData([]);
-        setSelectedImportWarehouse(null);
-        message.success(`Hoàn tất! ${result.success}/${result.total} đơn thành công`);
-        fetchOrders();
-      } else {
-        message.error(result.error || 'Import thất bại');
-      }
+      setImportedData([]);
+      setSelectedImportWarehouse(null);
+      message.success(`Hoàn tất! ${result.success}/${result.total} đơn thành công`);
+      fetchOrders();
     } catch (error) {
       message.destroy();
       console.error('Bulk import error:', error);
