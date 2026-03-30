@@ -17,20 +17,28 @@ def order_list(request):
         if status_filter:
             orders = orders.filter(status=status_filter)
 
+        def safe_float(val, default=0.0):
+            try:
+                if val is None or str(val).strip() == '' or str(val).lower() == 'none':
+                    return default
+                return float(val)
+            except (ValueError, TypeError):
+                return default
+
         data = [{
             'id': str(o.id),
             'code': o.order_code,
             'customer_name': o.customer_name,
             'customer_phone': o.customer_phone,
             'customer_address': o.delivery_address,
-            'delivery_latitude': float(o.delivery_lat) if o.delivery_lat else None,
-            'delivery_longitude': float(o.delivery_lng) if o.delivery_lng else None,
+            'delivery_latitude': safe_float(o.delivery_lat, None),
+            'delivery_longitude': safe_float(o.delivery_lng, None),
             'weight': 0,
             'volume': 0,
             'quantity': 1,
             'status': o.status,
             'priority': 'normal',
-            'cod_amount': float(o.amount) if o.amount else 0,
+            'cod_amount': safe_float(o.amount, 0.0),
             'shipping_fee': 0,
             'notes': o.items,
             'drivers': [{

@@ -31,7 +31,9 @@ const Orders = () => {
       setOrders(response.data);
       setFilteredOrders(response.data);
     } catch (error) {
-      message.error('Không thể tải danh sách đơn hàng!');
+      console.error("Fetch orders error:", error);
+      const errMsg = error.response?.data?.error || error.message || 'Lỗi không xác định';
+      message.error(`Không thể tải danh sách đơn hàng: ${errMsg}`);
     } finally {
       setLoading(false);
     }
