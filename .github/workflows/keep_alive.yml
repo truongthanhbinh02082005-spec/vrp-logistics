@@ -2,8 +2,8 @@ name: Keep Hugging Face Space Alive
 
 on:
   schedule:
-    # Chạy mỗi giờ một lần (vào phút thứ 0)
-    - cron: '0 * * * *'
+    # Chạy mỗi 30 phút một lần
+    - cron: '*/30 * * * *'
   workflow_dispatch: # Cho phép bạn nhấn nút chạy thủ công nếu muốn
 
 jobs:
