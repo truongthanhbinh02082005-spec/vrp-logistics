@@ -116,18 +116,15 @@ def bulk_create_orders(request):
     if not warehouse_id:
         return Response({'error': 'warehouse_id is required'}, status=status.HTTP_400_BAD_REQUEST)
     
-    created_orders = []
-    errors = []
+    order_objs = []
     
     for idx, item in enumerate(orders_data):
         try:
             code = f"ORD-{uuid.uuid4().hex[:8].upper()}"
-            
-            # Handle notes/items
             raw_notes = item.get('notes', '')
             items_content = json.dumps([{"name": str(raw_notes) if raw_notes else "Hàng hóa", "quantity": 1}])
             
-            order = Order.objects.create(
+            order_objs.append(Order(
                 order_code=code,
                 customer_name=item.get('customer_name', 'Khách lẻ') or 'Khách lẻ',
                 customer_phone=str(item.get('customer_phone', '')),
@@ -140,41 +137,38 @@ def bulk_create_orders(request):
                 order_date=timezone.now(),
                 items=items_content,
                 warehouse_id=warehouse_id,
-            )
-            
-            created_orders.append({'id': str(order.id), 'code': order.order_code})
-            
+                status='pending'
+            ))
         except Exception as e:
             errors.append({'index': idx, 'error': str(e)})
-            print(f"[BULK] Error at index {idx}: {e}")
+
+    # Thực hiện lưu SIÊU TỐC bằng 1 câu lệnh duy nhất
+    if order_objs:
+        try:
+            Order.objects.bulk_create(order_objs)
+            print(f"[BULK] Successfully created {len(order_objs)} orders in 1 query.")
+        except Exception as e:
+            return Response({'error': f"Lỗi Database: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    print(f"[BULK] Result: {len(created_orders)} success, {len(errors)} failed")
-    
-    # Cập nhật used_volume của kho sau khi import
-    if created_orders and warehouse_id:
+    # Cập nhật volume kho
+    if order_objs and warehouse_id:
         try:
             from warehouses.models import Warehouse
             from django.db.models import Sum
-            
             warehouse = Warehouse.objects.get(pk=warehouse_id)
-            # Tính tổng volume từ các đơn hàng trong kho
             total_used = Order.objects.filter(
                 warehouse_id=warehouse_id,
                 status__in=['pending', 'confirmed', 'assigned']
             ).aggregate(Sum('volume'))['volume__sum'] or 0
-            
-            # Cập nhật used_volume (chuyển m³ sang đơn vị của kho nếu cần, warehouse dùng dm³ * 1000)
             warehouse.used_volume = int(float(total_used) * 1000)
             warehouse.save()
-            print(f"[BULK] Updated warehouse {warehouse.name} used_volume: {warehouse.used_volume}")
-        except Exception as e:
-            print(f"[BULK] Error updating warehouse volume: {e}")
+        except: pass
     
     return Response({
-        'success': len(created_orders),
+        'success': len(order_objs),
         'failed': len(errors),
         'total': len(orders_data),
-        'message': f'Bulk import completed: {len(created_orders)} success, {len(errors)} failed'
+        'message': f'Đã import thành công {len(order_objs)} đơn hàng!'
     }, status=status.HTTP_201_CREATED)
 
 
