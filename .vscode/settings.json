@@ -1,0 +1,7 @@
+{
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/backend"
+    ],
+    "python.analysis.autoSearchPaths": true,
+    "python.defaultInterpreterPath": "python"
+}

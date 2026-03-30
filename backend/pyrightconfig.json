@@ -1,0 +1,14 @@
+{
+    "include": [
+        "**/*.py"
+    ],
+    "exclude": [
+        "**/node_modules",
+        "**/__pycache__",
+        "**/migrations"
+    ],
+    "pythonVersion": "3.11",
+    "venvPath": ".",
+    "reportMissingImports": false,
+    "reportMissingModuleSource": false
+}

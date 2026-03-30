@@ -1,0 +1,34 @@
+# Koyeb configuration for VRP Logistics
+# This file is for Koyeb CLI or Infrastructure as Code deployment.
+
+name: vrp-logistics
+services:
+  - name: vrp-app
+    type: web
+    image: docker.io/library/node:20-alpine # This is just a placeholder, Koyeb uses the Dockerfile
+    ports:
+      - port: 10000
+        protocol: http
+    env:
+      - key: PORT
+        value: "10000"
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: "*"
+      - key: DATABASE_URL
+        value: "${{ database.vrp-db.uri }}"
+    instance_type: nano
+    regions:
+      - sin
+    health_check:
+      path: /api/auth/login/ # A valid health check path
+      interval: 30
+      timeout: 5
+
+databases:
+  - name: vrp-db
+    engine: postgres
+    version: 15
+    regions:
+      - sin

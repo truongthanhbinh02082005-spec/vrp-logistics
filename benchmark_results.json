@@ -1,0 +1,29 @@
+[
+    {
+        "name": "A-n32-k5",
+        "nodes": 32,
+        "vehicles": 5,
+        "original_dist": 212.62001820960197,
+        "optimized_dist": 86.89,
+        "improvement": 59.13366919461771,
+        "latency": 10009.68337059021
+    },
+    {
+        "name": "A-n33-k5",
+        "nodes": 33,
+        "vehicles": 5,
+        "original_dist": 185.897242994378,
+        "optimized_dist": 73.17,
+        "improvement": 60.63954536312684,
+        "latency": 10004.873275756836
+    },
+    {
+        "name": "Real-200 Orders",
+        "nodes": 201,
+        "vehicles": 12,
+        "original_dist": 1177.624396484047,
+        "optimized_dist": 194.97,
+        "improvement": 83.4437872905734,
+        "latency": 10068.870306015015
+    }
+]
