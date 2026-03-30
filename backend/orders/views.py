@@ -116,19 +116,31 @@ def bulk_create_orders(request):
     if not warehouse_id:
         return Response({'error': 'warehouse_id is required'}, status=status.HTTP_400_BAD_REQUEST)
     
+    from django.db import transaction
+    
     order_objs = []
+    
+    # Giới hạn tối đa 500 đơn để tránh treo server
+    if len(orders_data) > 500:
+        return Response({'error': 'Mỗi lần chỉ được Import tối đa 500 đơn hàng.'}, status=status.HTTP_400_BAD_REQUEST)
     
     for idx, item in enumerate(orders_data):
         try:
+            # Chỉ xử lý nếu có tên khách hàng và địa chỉ (Loại bỏ dòng rác)
+            name = item.get('customer_name')
+            address = item.get('customer_address')
+            if not name or not address or str(name).strip() == "" or str(address).strip() == "":
+                continue
+
             code = f"ORD-{uuid.uuid4().hex[:8].upper()}"
             raw_notes = item.get('notes', '')
             items_content = json.dumps([{"name": str(raw_notes) if raw_notes else "Hàng hóa", "quantity": 1}])
             
             order_objs.append(Order(
                 order_code=code,
-                customer_name=item.get('customer_name', 'Khách lẻ') or 'Khách lẻ',
-                customer_phone=str(item.get('customer_phone', '')),
-                delivery_address=item.get('customer_address', ''),
+                customer_name=str(name)[:100],
+                customer_phone=str(item.get('customer_phone', ''))[:20],
+                delivery_address=str(address),
                 delivery_lat=item.get('delivery_latitude'),
                 delivery_lng=item.get('delivery_longitude'),
                 amount=float(item.get('cod_amount', 0) or 0),
@@ -142,11 +154,12 @@ def bulk_create_orders(request):
         except Exception as e:
             errors.append({'index': idx, 'error': str(e)})
 
-    # Thực hiện lưu SIÊU TỐC bằng 1 câu lệnh duy nhất
+    # Thực hiện lưu SIÊU TỐC và AN TOÀN
     if order_objs:
         try:
-            Order.objects.bulk_create(order_objs)
-            print(f"[BULK] Successfully created {len(order_objs)} orders in 1 query.")
+            with transaction.atomic():
+                Order.objects.bulk_create(order_objs)
+                print(f"[BULK] Atomic create success: {len(order_objs)} orders.")
         except Exception as e:
             return Response({'error': f"Lỗi Database: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
