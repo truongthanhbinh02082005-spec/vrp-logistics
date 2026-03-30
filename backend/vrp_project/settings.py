@@ -62,6 +62,9 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'vrp_project.urls'
 
+# Cho phép Hugging Face nhúng vào iframe
+X_FRAME_OPTIONS = 'ALLOWALL'
+
 # Static & Media serving
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
