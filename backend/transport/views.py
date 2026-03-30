@@ -200,23 +200,20 @@ def delete_all_routes(request):
         # Giải phóng tất cả xe đang bận
         Vehicle.objects.update(status='available')
         
-        # Collect order ids tied to these routes
-        order_ids = RouteStop.objects.filter(route__in=routes).values_list('order_id', flat=True)
+        # Xóa tất cả đơn hàng (để hệ thống trắng tinh)
+        orders_count = Order.objects.all().count()
+        Order.objects.all().delete()
         
-        # Đưa các đơn hàng này về trạng thái chờ
-        Order.objects.filter(id__in=order_ids).update(
-            status='pending',
-            vehicle_id=None,
-        )
-        # Clear ManyToMany drivers for orders
-        for o in Order.objects.filter(id__in=order_ids):
-            o.drivers.clear()
-        
-        # Xóa tất cả các Giao dịch (Transactions) để reset sạch cho lần chạy map mới
+        # Xóa tất cả các Giao dịch (Transactions)
         Transaction.objects.all().delete()
         
-        count, _ = routes.delete()
-        return Response({'message': f'Đã xóa {count} lộ trình, xóa giao dịch và đưa đơn hàng về chờ.'}, status=status.HTTP_200_OK)
+        # Xóa tất cả lộ trình
+        routes_count = Route.objects.all().count()
+        Route.objects.all().delete()
+        
+        return Response({
+            'message': f'Đã xóa sạch hệ thống: {routes_count} lộ trình và {orders_count} đơn hàng. Hệ thống đã sẵn sàng cho lần chạy mới.'
+        }, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
