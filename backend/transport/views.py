@@ -14,7 +14,7 @@ import math
 def route_list(request):
     if request.method == 'GET':
         status_filter = request.query_params.get('status')
-        routes = Route.objects.all()
+        routes = Route.objects.prefetch_related('stops', 'drivers').all()
 
         if status_filter:
             routes = routes.filter(status=status_filter)

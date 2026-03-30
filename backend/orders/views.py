@@ -12,7 +12,7 @@ def order_list(request):
     if request.method == 'GET':
         status_filter = request.query_params.get('status')
 
-        orders = Order.objects.all()
+        orders = Order.objects.prefetch_related('drivers').all()
 
         if status_filter:
             orders = orders.filter(status=status_filter)
