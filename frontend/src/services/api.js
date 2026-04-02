@@ -21,11 +21,14 @@ export const userAPI = {
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');
-    if (token) {
+    // Không gửi token cho request login/register để tránh lỗi 401 do token cũ
+    const isAuthRequest = config.url.includes('auth/login') || config.url.includes('auth/register');
+    
+    if (token && !isAuthRequest) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     // Debug: log API request info
-    console.log('API Request:', config.method?.toUpperCase(), config.url, token ? '(with token)' : '(no token)');
+    console.log('API Request:', config.method?.toUpperCase(), config.url, (token && !isAuthRequest) ? '(with token)' : '(no token)');
     return config;
   },
   (error) => {
@@ -38,12 +41,14 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      // Luôn xóa token khi gặp 401 để tránh bị kẹt token cũ
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      
       // Chỉ redirect nếu không phải đang ở trang login
       if (!window.location.pathname.includes('/login')) {
         console.error('401 Unauthorized - redirecting to login');
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
         window.location.href = '/login';
       }
     }
