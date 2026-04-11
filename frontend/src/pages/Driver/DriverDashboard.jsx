@@ -56,8 +56,11 @@ const DriverDashboard = () => {
     const [loadingRoute, setLoadingRoute] = useState(false);
     const [selectedStop, setSelectedStop] = useState(null); // Track which order is selected for navigation
 
-    // Camera capture ref
-    const cameraInputRef = useRef(null);
+    // Camera states
+    const [cameraActive, setCameraActive] = useState(false);
+    const videoRef = useRef(null);
+    const canvasRef = useRef(null);
+    const streamRef = useRef(null);
 
     useEffect(() => {
         fetchRouteData();
@@ -173,6 +176,48 @@ const DriverDashboard = () => {
             setUploadedImage(e.target.result);
         };
         reader.readAsDataURL(file);
+    };
+
+    // Camera functions
+    const startCamera = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+            });
+            streamRef.current = stream;
+            setCameraActive(true);
+            // Gán stream vào video element sau khi render
+            setTimeout(() => {
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+            }, 100);
+        } catch (err) {
+            console.error('Camera error:', err);
+            message.error('Không thể truy cập camera! Vui lòng cấp quyền camera.');
+        }
+    };
+
+    const capturePhoto = () => {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        if (!video || !canvas) return;
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        setUploadedImage(dataUrl);
+        stopCamera();
+    };
+
+    const stopCamera = () => {
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
+        setCameraActive(false);
     };
 
     const handleConfirmDelivery = async () => {
@@ -546,97 +591,136 @@ const DriverDashboard = () => {
                     title="Xác nhận giao hàng"
                     open={confirmModalVisible}
                     onCancel={() => {
+                        stopCamera();
                         setConfirmModalVisible(false);
                         setUploadedImage(null);
                     }}
                     footer={null}
                     centered
+                    width={420}
                 >
                     <div style={{ textAlign: 'center', padding: 16 }}>
                         <p>Chụp ảnh bằng chứng giao hàng</p>
 
-                        {/* Square Image Placeholder */}
+                        {/* Canvas ẩn để capture ảnh */}
+                        <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+                        {/* Camera live preview / Captured image / Placeholder */}
                         <div style={{
-                            width: 200,
-                            height: 200,
+                            width: '100%',
+                            maxWidth: 360,
+                            height: 270,
                             margin: '16px auto',
-                            border: uploadedImage ? 'none' : '2px dashed #d9d9d9',
-                            borderRadius: 12,
+                            border: (uploadedImage || cameraActive) ? 'none' : '2px dashed #d9d9d9',
+                            borderRadius: 16,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            background: uploadedImage ? 'transparent' : '#fafafa',
-                            overflow: 'hidden'
+                            background: cameraActive ? '#000' : (uploadedImage ? 'transparent' : '#fafafa'),
+                            overflow: 'hidden',
+                            position: 'relative'
                         }}>
-                            {uploadedImage ? (
-                                <Image src={uploadedImage} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} />
+                            {cameraActive ? (
+                                <>
+                                    <video
+                                        ref={videoRef}
+                                        autoPlay
+                                        playsInline
+                                        muted
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 16 }}
+                                    />
+                                    {/* Nút chụp tròn overlay trên video */}
+                                    <Button
+                                        shape="circle"
+                                        size="large"
+                                        onClick={capturePhoto}
+                                        style={{
+                                            position: 'absolute',
+                                            bottom: 16,
+                                            left: '50%',
+                                            transform: 'translateX(-50%)',
+                                            width: 64,
+                                            height: 64,
+                                            background: 'white',
+                                            border: '4px solid rgba(255,255,255,0.6)',
+                                            boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        }}
+                                    >
+                                        <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#ff4d4f' }} />
+                                    </Button>
+                                </>
+                            ) : uploadedImage ? (
+                                <Image src={uploadedImage} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 16 }} />
                             ) : (
                                 <div style={{ color: '#bfbfbf', textAlign: 'center' }}>
-                                    <CameraOutlined style={{ fontSize: 40 }} />
-                                    <div style={{ marginTop: 8, fontSize: 12 }}>Ảnh xác nhận</div>
+                                    <CameraOutlined style={{ fontSize: 48 }} />
+                                    <div style={{ marginTop: 8, fontSize: 13 }}>Chưa có ảnh</div>
                                 </div>
                             )}
                         </div>
 
-                        {/* Hidden input for camera capture */}
-                        <input
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                            ref={cameraInputRef}
-                            style={{ display: 'none' }}
-                            onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                    const reader = new FileReader();
-                                    reader.onload = (ev) => setUploadedImage(ev.target.result);
-                                    reader.readAsDataURL(file);
-                                }
-                                // Reset để có thể chụp lại cùng file
-                                e.target.value = '';
-                            }}
-                        />
-
-                        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-                            <Button
-                                icon={<CameraOutlined />}
-                                size="large"
-                                type="primary"
-                                onClick={() => cameraInputRef.current?.click()}
-                                style={{
-                                    borderRadius: 12,
-                                    height: 48,
-                                    fontWeight: 600,
-                                    background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
-                                    border: 0,
-                                    boxShadow: '0 4px 12px rgba(24, 144, 255, 0.3)'
-                                }}
-                            >
-                                {uploadedImage ? 'Chụp lại' : 'Chụp ảnh'}
-                            </Button>
-                            <Upload
-                                accept="image/*"
-                                showUploadList={false}
-                                beforeUpload={() => false}
-                                onChange={handleUpload}
-                            >
+                        {/* Buttons: Chụp ảnh / Chọn từ thư viện */}
+                        {!cameraActive && (
+                            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 12 }}>
                                 <Button
-                                    icon={<PictureOutlined />}
+                                    icon={<CameraOutlined />}
                                     size="large"
                                     type="primary"
-                                    ghost
+                                    onClick={() => {
+                                        setUploadedImage(null);
+                                        startCamera();
+                                    }}
                                     style={{
                                         borderRadius: 12,
                                         height: 48,
-                                        fontWeight: 600
+                                        fontWeight: 600,
+                                        background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                                        border: 0,
+                                        boxShadow: '0 4px 12px rgba(24, 144, 255, 0.3)'
                                     }}
                                 >
-                                    Chọn từ thư viện
+                                    {uploadedImage ? 'Chụp lại' : 'Chụp ảnh'}
                                 </Button>
-                            </Upload>
-                        </div>
-                        <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
-                            <Button block size="large" onClick={() => setConfirmModalVisible(false)}>Hủy</Button>
+                                <Upload
+                                    accept="image/*"
+                                    showUploadList={false}
+                                    beforeUpload={() => false}
+                                    onChange={handleUpload}
+                                >
+                                    <Button
+                                        icon={<PictureOutlined />}
+                                        size="large"
+                                        type="primary"
+                                        ghost
+                                        style={{
+                                            borderRadius: 12,
+                                            height: 48,
+                                            fontWeight: 600
+                                        }}
+                                    >
+                                        Chọn từ thư viện
+                                    </Button>
+                                </Upload>
+                            </div>
+                        )}
+
+                        {/* Nút hủy camera */}
+                        {cameraActive && (
+                            <Button
+                                block
+                                size="large"
+                                onClick={stopCamera}
+                                style={{ marginTop: 12, borderRadius: 12 }}
+                            >
+                                Hủy camera
+                            </Button>
+                        )}
+
+                        <div style={{ marginTop: 20, display: 'flex', gap: 12 }}>
+                            <Button block size="large" onClick={() => { stopCamera(); setConfirmModalVisible(false); setUploadedImage(null); }}>Hủy</Button>
                             <Button block type="primary" size="large" loading={uploading} disabled={!uploadedImage} onClick={handleConfirmDelivery} style={{ fontWeight: 'bold' }}>
                                 Hoàn tất đơn hàng
                             </Button>
