@@ -3,7 +3,7 @@ import { Card, Button, Upload, Modal, message, Typography, Tag, Space, Image, Li
 import {
     EnvironmentOutlined, PhoneOutlined, CameraOutlined,
     CheckCircleOutlined, CarOutlined, LogoutOutlined,
-    ArrowRightOutlined, ClockCircleOutlined, SendOutlined,
+    PictureOutlined, ClockCircleOutlined, SendOutlined,
     CompassOutlined, CloseCircleOutlined, ExclamationCircleOutlined
 } from '@ant-design/icons';
 import { Input } from 'antd';
@@ -55,6 +55,9 @@ const DriverDashboard = () => {
     const [routePolyline, setRoutePolyline] = useState([]);
     const [loadingRoute, setLoadingRoute] = useState(false);
     const [selectedStop, setSelectedStop] = useState(null); // Track which order is selected for navigation
+
+    // Camera capture ref
+    const cameraInputRef = useRef(null);
 
     useEffect(() => {
         fetchRouteData();
@@ -575,16 +578,63 @@ const DriverDashboard = () => {
                             )}
                         </div>
 
-                        <Upload
+                        {/* Hidden input for camera capture */}
+                        <input
+                            type="file"
                             accept="image/*"
-                            showUploadList={false}
-                            beforeUpload={() => false}
-                            onChange={handleUpload}
-                        >
-                            <Button icon={<CameraOutlined />} size="large" type="primary" ghost>
+                            capture="environment"
+                            ref={cameraInputRef}
+                            style={{ display: 'none' }}
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                    const reader = new FileReader();
+                                    reader.onload = (ev) => setUploadedImage(ev.target.result);
+                                    reader.readAsDataURL(file);
+                                }
+                                // Reset để có thể chụp lại cùng file
+                                e.target.value = '';
+                            }}
+                        />
+
+                        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                            <Button
+                                icon={<CameraOutlined />}
+                                size="large"
+                                type="primary"
+                                onClick={() => cameraInputRef.current?.click()}
+                                style={{
+                                    borderRadius: 12,
+                                    height: 48,
+                                    fontWeight: 600,
+                                    background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                                    border: 0,
+                                    boxShadow: '0 4px 12px rgba(24, 144, 255, 0.3)'
+                                }}
+                            >
                                 {uploadedImage ? 'Chụp lại' : 'Chụp ảnh'}
                             </Button>
-                        </Upload>
+                            <Upload
+                                accept="image/*"
+                                showUploadList={false}
+                                beforeUpload={() => false}
+                                onChange={handleUpload}
+                            >
+                                <Button
+                                    icon={<PictureOutlined />}
+                                    size="large"
+                                    type="primary"
+                                    ghost
+                                    style={{
+                                        borderRadius: 12,
+                                        height: 48,
+                                        fontWeight: 600
+                                    }}
+                                >
+                                    Chọn từ thư viện
+                                </Button>
+                            </Upload>
+                        </div>
                         <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
                             <Button block size="large" onClick={() => setConfirmModalVisible(false)}>Hủy</Button>
                             <Button block type="primary" size="large" loading={uploading} disabled={!uploadedImage} onClick={handleConfirmDelivery} style={{ fontWeight: 'bold' }}>

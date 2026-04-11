@@ -147,7 +147,18 @@ def user_list(request):
 @permission_classes([IsAuthenticated])
 def driver_list(request):
     """Danh sách tài xế kèm thông tin xe"""
+    from transport.models import Route
+    
     drivers = User.objects.filter(role='driver')
+    
+    # Lấy danh sách driver_id đang có lộ trình chưa hoàn thành (pending hoặc in_progress)
+    active_driver_ids = set(
+        Route.objects.filter(
+            status__in=['pending', 'in_progress']
+        ).values_list('drivers__id', flat=True)
+    )
+    # Loại bỏ None (nếu route không có driver nào)
+    active_driver_ids.discard(None)
     
     data = []
     for d in drivers:
@@ -160,6 +171,7 @@ def driver_list(request):
             'status': d.status,
             'current_vehicle': d.vehicle.code if d.vehicle else None,
             'current_vehicle_id': str(d.vehicle.id) if d.vehicle else None,
+            'has_active_route': d.id in active_driver_ids,
         })
         
     return Response(data)

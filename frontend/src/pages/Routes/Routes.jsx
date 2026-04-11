@@ -525,7 +525,7 @@ const RoutesPage = () => {
 
             <Form.Item name="driver_ids" label="Chọn tài xế (Xe tương ứng sẽ chạy)" rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 tài xế' }]}>
               <Select mode="multiple" placeholder="Chọn tài xế..." maxTagCount="responsive">
-                {drivers.filter(d => d.status !== 'inactive').map(d => (
+                {drivers.filter(d => d.status !== 'inactive' && !d.has_active_route).map(d => (
                   <Select.Option key={d.id} value={d.id}>
                     👤 {d.full_name || d.username} {d.current_vehicle ? `(Xe: ${d.current_vehicle})` : ''}
                   </Select.Option>
