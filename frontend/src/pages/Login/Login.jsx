@@ -237,10 +237,7 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Footer */}
-        <div style={{ marginTop: 32, opacity: 0.5 }}>
-          <Text style={{ fontSize: 11, color: '#94a3b8' }}>© 2024 VRP Distribution Management Solution</Text>
-        </div>
+
       </div>
     </ConfigProvider>
   );
