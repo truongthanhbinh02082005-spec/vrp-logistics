@@ -187,7 +187,7 @@ const Login = () => {
               </div>
             </div>
 
-            <Form form={form} layout="vertical" onFinish={onFinish} requiredMark={false}>
+            <Form form={form} layout="vertical" onFinish={onFinish} requiredMark={false} autoComplete="off">
               <Form.Item 
                 label={<span style={{ fontWeight: 600, color: '#374151' }}>Tên đăng nhập</span>}
                 name="username" 
@@ -208,6 +208,7 @@ const Login = () => {
                 <Input.Password 
                   placeholder="Nhập mật khẩu" 
                   size="large"
+                  autoComplete="new-password"
                   style={{ height: 48, borderRadius: 10, border: '1px solid #d1d5db' }}
                 />
               </Form.Item>
